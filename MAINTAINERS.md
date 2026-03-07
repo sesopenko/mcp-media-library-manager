@@ -40,7 +40,19 @@ This substitutes the template name, package name, Docker image name, and descrip
 
 ## Code Quality
 
-Run all quality checks manually:
+### Running quality gates
+
+Use the shared quality gate runner script as the canonical validation entry point:
+
+```bash
+scripts/run-quality-gates.sh
+```
+
+This script runs all quality checks in deterministic order and fails with a non-zero exit status if any gate fails.
+
+### Individual quality checks
+
+If needed, run checks individually:
 
 ```bash
 uv run ruff format .
@@ -48,7 +60,7 @@ uv run ruff check .
 uv run mypy src/
 ```
 
-These checks also run automatically on every commit via pre-commit hooks.
+All checks also run automatically on every commit via pre-commit hooks.
 
 ---
 
