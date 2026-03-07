@@ -9,7 +9,7 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server for managing the file oper
 
 ### Copying ripped shows to destination folders
 
-Example destionation:  `/<path_to_your_library>/<show name> (<year first aired>)/Seasn XX/SXXEXX.mkv`
+Example destionation:  `/<path_to_your_library>/<show name> (<year first aired>)/Season XX/SXXEXX.mkv`
 
 When archiving shows from blurays using tools such as [MakeMKV](https://www.makemkv.com/) the output filenames won't follow the structure needed for media server software. LLMs can handle the fuzzy tranlsation of file names to show names, season numbers, and episode numbers. Trusting the LLM with the file copies however risks non-adherence to the standards and the LLM potentially performing destructive operations, such as deleting your whole library. The LLM is instead given a clear tool with a source file path, show name, how year of first air, season number, episode number.  The tool then ensures the file is moved to the proper location and will report back with an error if a file already exists in the location.  Existing files in the library aren't altered by an LLM and the standard is follow.
 
