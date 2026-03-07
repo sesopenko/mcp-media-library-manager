@@ -67,7 +67,7 @@ Update `src/mcp_media_library_manager/config.py` so the typed configuration mode
 **Description:**
 Create the pure path-handling logic that turns validated structured metadata into a safe destination path for a TV episode. This work should live outside `server.py` and ideally outside the high-level MCP tool wrapper as well, in a new helper module such as `src/mcp_media_library_manager/pathing.py` or `src/mcp_media_library_manager/library_paths.py`. Implement validation and helper functions for: rejecting show names containing path separator characters such as `/` and `\`; rejecting unsafe characters such as control characters and embedded newlines; enforcing Windows-valid path component rules for generated folder and file names; normalizing generated paths to the documented Linux-style forward-slash structure; and building the exact README destination format `/<show_root>/<show name> (<year first aired>)/Season XX/SXXEXX.mkv`. This unit should also provide helper functions that verify whether a resolved source path is inside a configured source root and whether a resolved destination path is inside a configured show root. Keep these helpers deterministic and side-effect free so they are easy to test directly. This unit must add or update unit tests for destination construction, cross-platform-safe path validation, and root-enforcement helpers, and it is only complete when the shared quality gate runner from U-00 passes.
 
-**Code:** [ ] U-03
+**Code:** [x] U-03
 **Title:** Implement filesystem ingest workflow
 **Dependencies:** U-00, U-01, U-02  
 **Description:**
