@@ -61,7 +61,7 @@ Create a shell script that runs the full project quality gate sequence defined b
 **Description:**
 Update `src/mcp_media_library_manager/config.py` so the typed configuration model includes `source_roots` and `show_roots` in the `[server]` section in addition to the existing `host` and `port`. Make configuration loading fail fast with explicit validation errors when either key is missing, empty, malformed, or unusable. Decide and document one canonical representation in Python, preferably `list[Path]` or `tuple[Path, ...]`, even if the TOML file continues to accept the README’s current comma-separated string style. Normalize root entries during parsing so later units are not forced to parse configuration strings themselves. Keep the configuration layer focused on loading and validating configuration only; it should not perform media operations. Update any related config fixtures or sample config files used by tests. This unit must add or update unit tests covering valid parsing and fail-fast validation cases, and it is only complete when the shared quality gate runner from U-00 passes.
 
-**Code:** [ ] U-02
+**Code:** [x] U-02
 **Title:** Implement path rules and destination builder
 **Dependencies:** U-00, U-01  
 **Description:**
