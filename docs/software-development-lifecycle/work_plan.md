@@ -79,7 +79,7 @@ Implement the actual TV episode ingest operation as pure application logic in `s
 **Description:**
 Register a new MCP tool in `src/mcp_media_library_manager/server.py` that wraps the ingest workflow from U-03. Follow the existing project pattern where `server.py` contains the FastMCP `@mcp.tool()` registration and delegates real work to typed functions in `tools.py`. Give the tool a clear name and docstring that make the inputs and behavior obvious to an MCP-capable agent. Ensure the server passes the loaded configuration into the ingest logic in a maintainable way rather than relying on ad hoc globals. Add structured logging around tool invocation, success, validation failures, and collision failures using the existing logger factory from `src/mcp_media_library_manager/logging.py`, while keeping logs free of unnecessary noise. The result of this unit should be that an MCP client can call the new tool over the existing `/mcp` endpoint and receive a structured success or failure response. This unit must add or update unit tests covering the MCP wrapper and logging-relevant behavior where practical, and it is only complete when the shared quality gate runner from U-00 passes.
 
-**Code:** [ ] U-05
+**Code:** [x] U-05
 **Title:** Build automated test coverage for configuration, pathing, and ingest behavior
 **Dependencies:** U-00, U-01, U-02, U-03, U-04  
 **Description:**
