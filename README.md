@@ -152,9 +152,12 @@ Consult your AI application's documentation for how to register an MCP server. E
 
 ## Available Tools
 
-| Tool | Description |
-|---|---|
-| `health_check` | Returns `{"status": "ok"}` to confirm the server is running. |
+| Tool | Description                                                                                                                                                              |
+|---|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `health_check` | Returns `{"status": "ok"}` to confirm the server is running.                                                                                                             |
+| `list_source_roots` | returns a list of source roots, one per line. Helps the LLM understand where files can be moved to.                                                                      |
+| `list_show_roots` | returns a list of show roots, one per line.  Helps the LLM understand where files can be moved from.                                                                     |
+| `move_show` | Moves a show from a show_root to a destination with clear destination details for standard adherence and security. Fails with error if it already exists in destination. |
 
 > Tools are documented here as they are implemented.
 
