@@ -1,21 +1,21 @@
 [project]
-name = "mcp-base"
+name = "mcp-media-library-manager"
 version = "0.1.0"
-description = "Bare-bones FastMCP server template"
+description = "An MCP server for managing file operations of a media library"
 requires-python = ">=3.13"
 dependencies = [
     "fastmcp>=2.0",
 ]
 
 [project.scripts]
-mcp-base = "mcp_base.server:main"
+mcp-media-library-manager = "mcp_media_library_manager.server:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mcp_base"]
+packages = ["src/mcp_media_library_manager"]
 
 [dependency-groups]
 dev = [
@@ -44,4 +44,4 @@ quote-style = "double"
 [tool.mypy]
 python_version = "3.13"
 mypy_path = "src"
-packages = ["mcp_base"]
+packages = ["mcp_media_library_manager"]

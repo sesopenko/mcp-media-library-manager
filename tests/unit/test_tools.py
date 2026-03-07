@@ -1,6 +1,6 @@
 """Unit tests for MCP tool implementations."""
 
-from mcp_base.tools import health_check
+from mcp_media_library_manager.tools import health_check
 
 
 def test_health_check_returns_ok() -> None:

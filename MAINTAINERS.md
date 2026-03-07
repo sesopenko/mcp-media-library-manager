@@ -57,7 +57,7 @@ These checks also run automatically on every commit via pre-commit hooks.
 ### Locally
 
 ```bash
-uv run python -m mcp_base
+uv run python -m mcp_media_library_manager
 ```
 
 Pass `--config <path>` to use a non-default config file location.

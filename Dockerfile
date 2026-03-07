@@ -18,4 +18,4 @@ RUN uv sync --frozen --no-dev
 
 EXPOSE 8080
 
-CMD ["uv", "run", "mcp-base", "--config", "/config/config.toml"]
+CMD ["uv", "run", "mcp-media-library-manager", "--config", "/config/config.toml"]

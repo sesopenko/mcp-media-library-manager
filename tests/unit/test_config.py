@@ -6,7 +6,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from mcp_base.config import AppConfig, LoggingConfig, ServerConfig, load_config
+from mcp_media_library_manager.config import AppConfig, LoggingConfig, ServerConfig, load_config
 
 VALID_TOML = b"""
 [server]

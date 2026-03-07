@@ -1,12 +1,12 @@
-"""FastMCP server entrypoint for the mcp-base server.
+"""FastMCP server entrypoint for the mcp-media-library-manager server.
 
 Run with::
 
-    uv run python -m mcp_base
+    uv run python -m mcp_media_library_manager
 
 or via the installed script::
 
-    mcp-base
+    mcp-media-library-manager
 """
 
 import argparse
@@ -14,11 +14,11 @@ from pathlib import Path
 
 import fastmcp
 
-from mcp_base.config import load_config
-from mcp_base.logging import Logger, make_logger
-from mcp_base.tools import health_check as _health_check
+from mcp_media_library_manager.config import load_config
+from mcp_media_library_manager.logging import Logger, make_logger
+from mcp_media_library_manager.tools import health_check as _health_check
 
-mcp = fastmcp.FastMCP("mcp-base")
+mcp = fastmcp.FastMCP("mcp-media-library-manager")
 
 _logger: Logger | None = None
 
@@ -35,7 +35,7 @@ def health_check() -> dict[str, str]:
 
 def main() -> None:
     """Parse CLI arguments, load configuration, and start the MCP server."""
-    parser = argparse.ArgumentParser(description="mcp-base MCP server")
+    parser = argparse.ArgumentParser(description="mcp-media-library-manager MCP server")
     parser.add_argument(
         "--config",
         type=Path,
