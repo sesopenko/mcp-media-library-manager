@@ -85,7 +85,7 @@ Register a new MCP tool in `src/mcp_media_library_manager/server.py` that wraps 
 **Description:**
 Expand `tests/unit/` so the new behavior is covered with focused automated tests. Add config tests that prove `source_roots` and `show_roots` are parsed correctly and that malformed or missing values fail fast. Add pathing tests for valid destination construction, zero-padded season and episode formatting, rejection of show names with path separator characters, rejection of control characters or embedded newlines, and enforcement that generated components remain Windows-friendly. Add ingest workflow tests using temporary directories to verify successful moves, directory creation, source-root enforcement, show-root enforcement, and collision handling when the destination file already exists. Add at least a light server-level test or equivalent coverage confirming the MCP wrapper delegates to the new tool logic. Keep tests aligned with the architecture described in the README: pure logic should be tested directly without depending on FastMCP where possible. This unit must also verify that the consolidated quality gate runner from U-00 succeeds against the full changed codebase, and it is only complete when that happens cleanly.
 
-**Code:** [ ] U-06
+**Code:** [x] U-06
 **Title:** Synchronize README, examples, and project scaffolding
 **Dependencies:** U-00, U-04, U-05  
 **Description:**

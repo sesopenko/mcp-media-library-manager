@@ -1,8 +1,13 @@
 [server]
+# Address the MCP server listens on. Use 0.0.0.0 to accept connections on all interfaces.
 host = "0.0.0.0"
+# Port the MCP server listens on.
 port = 8080
+# Comma-separated list of source locations. Ingest operations can only read/move files from these paths.
 source_roots = "/media/rip_location"
+# Comma-separated list of destination root folders for TV shows. Ingest operations can only write to these paths.
 show_roots = "/media/tv_shows,/media/tv_shows_2"
 
 [logging]
+# Log verbosity level. One of: debug, info, warning, error.
 level = "info"

@@ -48,11 +48,18 @@ Create a `config.toml` in the working directory (or pass `--config <path>`):
 
 ```toml
 [server]
-host = "0.0.0.0"  # address the MCP server listens on (0.0.0.0 = all interfaces)
-port = 8080        # port the MCP server listens on
+# Address the MCP server listens on. Use 0.0.0.0 to accept connections on all interfaces.
+host = "0.0.0.0"
+# Port the MCP server listens on.
+port = 8080
+# Comma-separated list of source locations. Ingest operations can only read/move files from these paths.
+source_roots = "/media/rip_location"
+# Comma-separated list of destination root folders for TV shows. Ingest operations can only write to these paths.
+show_roots = "/media/tv_shows,/media/tv_shows_2"
 
 [logging]
-level = "info"     # log verbosity: debug, info, warning, error
+# Log verbosity level. One of: debug, info, warning, error.
+level = "info"
 ```
 
 ---
@@ -79,7 +86,8 @@ Consult your AI application's documentation for how to register an MCP server.
 
 | Tool | Description |
 |---|---|
-| `health_check` | Returns `{"status": "ok"}` to confirm the server is running. This is a placeholder — replace it with your own tools. |
+| `health_check` | Returns `{"status": "ok"}` to confirm the server is running. |
+| `ingest_tv_episode` | Ingests a ripped TV episode into the media library using structured metadata, with server-computed standardized destination paths that follow naming conventions and cannot be controlled by the caller. |
 
 ---
 

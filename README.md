@@ -103,11 +103,10 @@ Create a `config.toml` in the working directory (or pass `--config <path>`):
 [server]
 host = "0.0.0.0"
 port = 8080
+# Comma-separated list of source locations — ingest operations can only read/move files from here
 source_roots = "/media/rip_location"
-
-# tool will know that these destinations must follow tv show organization standard:
+# Comma-separated list of show root folders — ingest operations can only write to these locations
 show_roots = "/media/tv_shows,/media/tv_shows_2"
-
 
 [logging]
 level = "info"
@@ -119,8 +118,8 @@ level = "info"
 |---------------|----------------------|----------------------------------------------------------|
 | `host`        | `"0.0.0.0"`          | Address the MCP server listens on. `0.0.0.0` binds all interfaces. |
 | `port`        | `8080`               | Port the MCP server listens on.                          |
-| `source_roots` | `/media/source` | Source locations, cannot copy/move files outside here for security |
-| `show_roots` | `/media/destination` | Comma separated list of folders for destination tv shows |
+| `source_roots` | Required | Comma-separated list of source locations. Ingest operations can only read/move files from these paths. |
+| `show_roots` | Required | Comma-separated list of destination root folders for TV shows. Ingest operations can only write to these paths. |
 
 ### [logging]
 
@@ -155,11 +154,50 @@ Consult your AI application's documentation for how to register an MCP server. E
 | Tool | Description                                                                                                                                                              |
 |---|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `health_check` | Returns `{"status": "ok"}` to confirm the server is running.                                                                                                             |
-| `list_source_roots` | returns a list of source roots, one per line. Helps the LLM understand where files can be moved to.                                                                      |
-| `list_show_roots` | returns a list of show roots, one per line.  Helps the LLM understand where files can be moved from.                                                                     |
-| `move_show` | Moves a show from a show_root to a destination with clear destination details for standard adherence and security. Fails with error if it already exists in destination. |
+| `ingest_tv_episode` | Ingests a ripped TV episode into the media library using structured metadata, with server-computed standardized destination paths that follow naming conventions and cannot be controlled by the caller. |
 
-> Tools are documented here as they are implemented.
+### Tool Reference
+
+#### `ingest_tv_episode`
+
+Safely ingests a TV episode file into the media library at a standardized location determined by server-side rules.
+
+**Arguments:**
+- `source_file_path` (string): Path to the source episode file. Must be within a configured source root.
+- `show_name` (string): The TV show name. Cannot contain path separators (`/` or `\`) or control characters.
+- `first_air_year` (integer): The year the show first aired.
+- `season_number` (integer): The season number (1-based). Will be zero-padded to two digits in the destination filename.
+- `episode_number` (integer): The episode number (1-based). Will be zero-padded to two digits in the destination filename.
+
+**Destination Path Format:**
+
+The tool automatically computes the destination path using the standardized format:
+```
+/<show_root>/<show_name> (<first_air_year>)/Season <XX>/<SXXEXX>.mkv
+```
+
+Where:
+- `<show_root>` is one of the configured show roots (the first matching root is selected)
+- `<show_name>` is the provided show name
+- `<first_air_year>` is the provided year
+- `<XX>` is the zero-padded season number (e.g., `01`, `10`, `23`)
+- `<SXXEXX>` is the standard episodic notation (e.g., `S01E05`, `S10E12`)
+
+**Error Conditions:**
+
+The tool rejects the operation with an explicit error if:
+- The source file path is outside all configured source roots
+- The source file does not exist or is not a regular file
+- The show name contains path separators or control characters
+- The computed destination path is outside all configured show roots
+- The destination file already exists (no overwriting)
+- Season or episode numbers are invalid
+- A directory creation or file move operation fails
+
+**Behavior:**
+
+- Missing destination directories are created automatically
+- The operation is safe by default: no file overwrites, no caller-controlled destination paths, strict input validation
 
 ---
 
