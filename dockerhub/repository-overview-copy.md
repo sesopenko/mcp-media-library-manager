@@ -1,13 +1,27 @@
 <!-- This file is copy-pasted into Docker Hub as the repository overview.
-     It is NOT developer documentation. Do not read this for project context.
-     Edit it only when tools, config, Docker Compose examples, or endpoints change. -->
-# mcp-base
+     It is NOT developer documentation. Edit it only when tools, config, Docker Compose examples, or endpoints change. -->
 
-A bare-bones [FastMCP](https://github.com/jlowin/fastmcp) server template. Fork this repository to build your own MCP server without starting from scratch.
+# mcp-media-library-manager
 
-[MCP (Model Context Protocol)](https://modelcontextprotocol.io/) is an open standard that lets AI assistants call external tools and services. This template implements MCP over HTTP so any MCP-compatible AI application can reach your server.
+A [FastMCP](https://github.com/jlowin/fastmcp) server for managing the file operations of a media library, ensuring files follow common standards for Media Server Software such as Emby and Plex. Destination files are taken out of the hands of the LLM to ensure they follow standards and safe operations are performed that don't expose a library as easily to prompt injection.
+
+[MCP (Model Context Protocol)](https://modelcontextprotocol.io/) is an open standard that gives AI assistants real capabilities. Instead of only generating text, AI can use MCP servers to access tools, services, and data through a shared interface—making it possible for any MCP-compatible app to interact with real systems.
 
 GitHub: [sesopenko/mcp-media-library-manager](https://github.com/sesopenko/mcp-media-library-manager)
+
+---
+
+## Use Case: Organizing Ripped TV Shows
+
+When archiving shows from Blu-rays using tools like [MakeMKV](https://www.makemkv.com/), the output filenames won't follow the structure needed for media server software. This server lets an LLM handle the fuzzy translation of filenames to show names, season numbers, and episode numbers—while the server itself handles the safe placement of files.
+
+Instead of trusting an LLM with file operations (risking non-standard organization or destructive mistakes), the `ingest_tv_episode` tool receives structured inputs and ensures files are moved to the proper location following the standard:
+
+```
+/<path_to_your_library>/<show name> (<year first aired>)/Season XX/SXXEXX.mkv
+```
+
+The server rejects unsafe operations and reports back with an error if a file already exists. Your library structure and existing files remain safe.
 
 ---
 
@@ -19,12 +33,15 @@ GitHub: [sesopenko/mcp-media-library-manager](https://github.com/sesopenko/mcp-m
 
    ```yaml
    services:
-     mcp-base:
+     mcp-media-library-manager:
        image: sesopenko/mcp-media-library-manager:latest
        ports:
          - "8080:8080"
        volumes:
          - ./config.toml:/config/config.toml:ro
+         - /home/rip_location:/media/rip_location
+         - /home/my_user/Videos/tv_shows:/media/tv_shows
+         - /mnt/usb_hard_drive/tv_shows:/media/tv_shows_2
        restart: unless-stopped
    ```
 
@@ -62,9 +79,36 @@ show_roots = "/media/tv_shows,/media/tv_shows_2"
 level = "info"
 ```
 
+### [server] Section
+
+| Key | Description |
+|---|---|
+| `host` | Address the MCP server listens on. `0.0.0.0` accepts connections on all interfaces. Default: `"0.0.0.0"` |
+| `port` | Port the MCP server listens on. Default: `8080` |
+| `source_roots` | **Required.** Comma-separated list of source locations. Ingest operations can only read/move files from these paths. This restricts the server to specific source directories for security. |
+| `show_roots` | **Required.** Comma-separated list of destination root folders for TV shows. Ingest operations can only write files to these paths. This ensures ingested episodes stay within designated library locations. |
+
+### [logging] Section
+
+| Key | Description |
+|---|---|
+| `level` | Log verbosity level. One of: `debug`, `info`, `warning`, `error`. Default: `"info"` |
+
+---
+
+## Security
+
+This server has **no authentication** on its MCP endpoint. It is designed for **LAN use only**.
+
+**Do not expose this server directly to the internet.**
+
+If you need to access it remotely, place it behind a reverse proxy that handles TLS termination and access control.
+
 ---
 
 ## Connecting an AI Application
+
+This server uses the **Streamable HTTP** MCP transport. Clients communicate via HTTP POST with streaming responses.
 
 Point your MCP-compatible AI application at the server's MCP endpoint:
 
@@ -78,16 +122,67 @@ For example, if the server is running on `192.168.1.10` with the default port:
 http://192.168.1.10:8080/mcp
 ```
 
-Consult your AI application's documentation for how to register an MCP server.
+Consult your AI application's documentation for how to register an MCP server. Ensure it supports the Streamable HTTP transport (most modern MCP clients do).
 
 ---
 
 ## Available Tools
 
-| Tool | Description |
-|---|---|
-| `health_check` | Returns `{"status": "ok"}` to confirm the server is running. |
-| `ingest_tv_episode` | Ingests a ripped TV episode into the media library using structured metadata, with server-computed standardized destination paths that follow naming conventions and cannot be controlled by the caller. |
+### health_check
+
+Returns `{"status": "ok"}` to confirm the server is running.
+
+### ingest_tv_episode
+
+Safely ingests a ripped TV episode into the media library at a standardized location determined by server-side rules.
+
+**Arguments:**
+
+- `source_file_path` (string): Path to the source episode file. Must be within a configured source root.
+- `show_name` (string): The TV show name. Cannot contain path separators (`/` or `\`) or control characters.
+- `first_air_year` (integer): The year the show first aired.
+- `season_number` (integer): The season number (1-based, e.g., 1, 2, 10). Will be zero-padded to two digits in the destination filename (e.g., S01, S02, S10).
+- `episode_number` (integer): The episode number (1-based, e.g., 1, 5, 12). Will be zero-padded to two digits in the destination filename (e.g., E01, E05, E12).
+
+**Destination Path Format:**
+
+The tool automatically computes the destination path using the standardized format:
+
+```
+/<show_root>/<show_name> (<first_air_year>)/Season <XX>/<SXXEXX>.mkv
+```
+
+Example: `/media/tv_shows/Breaking Bad (2008)/Season 01/S01E01.mkv`
+
+**What It Does:**
+
+- Validates the source file exists and is within a configured source root
+- Validates the show name contains no path separators or control characters
+- Computes the standardized destination path using the provided metadata
+- Verifies the destination path is within a configured show root
+- Creates missing destination directories automatically
+- Moves the file to the destination
+- Returns success with the computed destination path, or failure with an error message
+
+**Error Conditions:**
+
+The tool rejects the operation with an explicit error if:
+
+- The source file path is outside all configured source roots (source root enforcement)
+- The source file does not exist or is not a regular file
+- The show name contains path separators (`/` or `\`) or control characters
+- The computed destination path is outside all configured show roots (show root enforcement)
+- The destination file already exists (no file overwrites)
+- Season or episode numbers are invalid
+- Directory creation fails
+- File move operation fails
+
+**Safety Guarantees:**
+
+- No caller-controlled destination paths — the server computes destinations from validated structured inputs
+- No file overwrites — the operation fails explicitly if the destination already exists
+- Strict input validation — unsafe or ambiguous inputs are rejected immediately
+- Source and show root enforcement — files can only be read from and written to configured locations
 
 ---
 
