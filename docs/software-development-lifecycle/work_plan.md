@@ -55,7 +55,7 @@ Each unit below has a checkbox at the start of its code (e.g., `[ ] U-00`). As u
 **Description:**
 Create a shell script that runs the full project quality gate sequence defined by `.pre-commit-config.yaml` so later units do not need to rediscover or reverse engineer the repository’s validation steps. Place the script in a stable, easy-to-find location such as `scripts/run-quality-gates.sh`, ensure it is executable, and make its interface simple enough for an LLM coding agent to invoke consistently from the repository root. The script should run the relevant quality checks in a deterministic order and fail with a non-zero exit status if any gate fails. Update the README or maintainer-facing workflow notes only if needed so future contributors know this script is the canonical validation entry point. This unit must include or update unit-adjacent coverage if any supporting Python wrapper code is introduced, and it is only complete when the new script itself has been executed successfully against the repository.
 
-**Code:** [ ] U-01
+**Code:** [x] U-01
 **Title:** Expand configuration model and validation
 **Dependencies:** U-00  
 **Description:**
