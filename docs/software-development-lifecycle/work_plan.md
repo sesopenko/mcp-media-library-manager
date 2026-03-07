@@ -73,7 +73,7 @@ Create the pure path-handling logic that turns validated structured metadata int
 **Description:**
 Implement the actual TV episode ingest operation as pure application logic in `src/mcp_media_library_manager/tools.py` or in a new filesystem-oriented helper module invoked by `tools.py`. The operation should accept the structured inputs described by the requirements: source file path, show name, first-air year, season number, and episode number. Validate the supplied source path against configured `source_roots`, compute the destination path using the U-02 helpers, verify the destination remains within a configured `show_root`, create any missing destination directories, and fail with an explicit error if the destination file already exists. The implementation must be safe by default: do not overwrite existing files, do not allow caller-controlled destination paths, and reject ambiguous or invalid inputs instead of guessing. Return a clear structured result that makes success and failure states obvious to MCP callers, including the computed destination path on success and a useful error message on failure. Preserve strict type annotations and keep framework-specific code out of this unit. This unit must add or update unit tests for successful ingest, directory creation, collision failures, and source-root and show-root enforcement, and it is only complete when the shared quality gate runner from U-00 passes.
 
-**Code:** [ ] U-04
+**Code:** [x] U-04
 **Title:** Expose the ingest operation as an MCP tool and integrate logging
 **Dependencies:** U-00, U-03  
 **Description:**
