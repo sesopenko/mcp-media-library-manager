@@ -39,6 +39,7 @@ shared interface—making it possible for any MCP-compatible app to interact wit
    services:
      mcp-media-library-manager:
        image: sesopenko/mcp-media-library-manager:latest
+       user: "${PUID:-1000}:${PGID:-1000}"
        ports:
          - "8080:8080"
        volumes:
@@ -48,6 +49,27 @@ shared interface—making it possible for any MCP-compatible app to interact wit
          - /mnt/usb_hard_drive/tv_shows:/media/tv_shows_2
        restart: unless-stopped
    ```
+
+   The `user:` directive runs the container process as the given UID and GID so that ingested files are owned by your user account rather than root. `PUID` and `PGID` default to `1000`. To find your own IDs, run:
+
+   ```bash
+   id
+   ```
+
+   This outputs something like `uid=1000(yourname) gid=1000(yourname) ...`. Use the `uid` value as `PUID` and the `gid` value as `PGID`. Create a `.env` file next to `docker-compose.yml`:
+
+   ```
+   PUID=1000
+   PGID=1000
+   ```
+
+   To verify file ownership after ingestion, run:
+
+   ```bash
+   stat -c "%u %g %n" /path/to/ingested/file
+   ```
+
+   The first two numbers should match your `PUID` and `PGID`.
 
 2. Copy the example config and edit it:
 
