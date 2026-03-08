@@ -25,6 +25,66 @@ The server rejects unsafe operations and reports back with an error if a file al
 
 ---
 
+## Available Tools
+
+### health_check
+
+Returns `{"status": "ok"}` to confirm the server is running.
+
+### ingest_tv_episode
+
+Safely ingests a ripped TV episode into the media library at a standardized location determined by server-side rules.
+
+**Arguments:**
+
+- `source_file_path` (string): Path to the source episode file. Must be within a configured source root.
+- `show_name` (string): The TV show name. Cannot contain path separators (`/` or `\`) or control characters.
+- `first_air_year` (integer): The year the show first aired.
+- `season_number` (integer): The season number (1-based, e.g., 1, 2, 10). Will be zero-padded to two digits in the destination filename (e.g., S01, S02, S10).
+- `episode_number` (integer): The episode number (1-based, e.g., 1, 5, 12). Will be zero-padded to two digits in the destination filename (e.g., E01, E05, E12).
+
+**Destination Path Format:**
+
+The tool automatically computes the destination path using the standardized format:
+
+```
+/<show_root>/<show_name> (<first_air_year>)/Season <XX>/<SXXEXX>.mkv
+```
+
+Example: `/media/tv_shows/Breaking Bad (2008)/Season 01/S01E01.mkv`
+
+**What It Does:**
+
+- Validates the source file exists and is within a configured source root
+- Validates the show name contains no path separators or control characters
+- Computes the standardized destination path using the provided metadata
+- Verifies the destination path is within a configured show root
+- Creates missing destination directories automatically
+- Moves the file to the destination
+- Returns success with the computed destination path, or failure with an error message
+
+**Error Conditions:**
+
+The tool rejects the operation with an explicit error if:
+
+- The source file path is outside all configured source roots (source root enforcement)
+- The source file does not exist or is not a regular file
+- The show name contains path separators (`/` or `\`) or control characters
+- The computed destination path is outside all configured show roots (show root enforcement)
+- The destination file already exists (no file overwrites)
+- Season or episode numbers are invalid
+- Directory creation fails
+- File move operation fails
+
+**Safety Guarantees:**
+
+- No caller-controlled destination paths — the server computes destinations from validated structured inputs
+- No file overwrites — the operation fails explicitly if the destination already exists
+- Strict input validation — unsafe or ambiguous inputs are rejected immediately
+- Source and show root enforcement — files can only be read from and written to configured locations
+
+---
+
 ## Quick Start
 
 ### Docker Compose
@@ -145,66 +205,6 @@ http://192.168.1.10:8080/mcp
 ```
 
 Consult your AI application's documentation for how to register an MCP server. Ensure it supports the Streamable HTTP transport (most modern MCP clients do).
-
----
-
-## Available Tools
-
-### health_check
-
-Returns `{"status": "ok"}` to confirm the server is running.
-
-### ingest_tv_episode
-
-Safely ingests a ripped TV episode into the media library at a standardized location determined by server-side rules.
-
-**Arguments:**
-
-- `source_file_path` (string): Path to the source episode file. Must be within a configured source root.
-- `show_name` (string): The TV show name. Cannot contain path separators (`/` or `\`) or control characters.
-- `first_air_year` (integer): The year the show first aired.
-- `season_number` (integer): The season number (1-based, e.g., 1, 2, 10). Will be zero-padded to two digits in the destination filename (e.g., S01, S02, S10).
-- `episode_number` (integer): The episode number (1-based, e.g., 1, 5, 12). Will be zero-padded to two digits in the destination filename (e.g., E01, E05, E12).
-
-**Destination Path Format:**
-
-The tool automatically computes the destination path using the standardized format:
-
-```
-/<show_root>/<show_name> (<first_air_year>)/Season <XX>/<SXXEXX>.mkv
-```
-
-Example: `/media/tv_shows/Breaking Bad (2008)/Season 01/S01E01.mkv`
-
-**What It Does:**
-
-- Validates the source file exists and is within a configured source root
-- Validates the show name contains no path separators or control characters
-- Computes the standardized destination path using the provided metadata
-- Verifies the destination path is within a configured show root
-- Creates missing destination directories automatically
-- Moves the file to the destination
-- Returns success with the computed destination path, or failure with an error message
-
-**Error Conditions:**
-
-The tool rejects the operation with an explicit error if:
-
-- The source file path is outside all configured source roots (source root enforcement)
-- The source file does not exist or is not a regular file
-- The show name contains path separators (`/` or `\`) or control characters
-- The computed destination path is outside all configured show roots (show root enforcement)
-- The destination file already exists (no file overwrites)
-- Season or episode numbers are invalid
-- Directory creation fails
-- File move operation fails
-
-**Safety Guarantees:**
-
-- No caller-controlled destination paths — the server computes destinations from validated structured inputs
-- No file overwrites — the operation fails explicitly if the destination already exists
-- Strict input validation — unsafe or ambiguous inputs are rejected immediately
-- Source and show root enforcement — files can only be read from and written to configured locations
 
 ---
 
