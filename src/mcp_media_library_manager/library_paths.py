@@ -133,6 +133,81 @@ def is_destination_path_inside_root(dest_path: str | Path, show_roots: tuple[Pat
     return False, f"Destination path {dest} is not inside any configured show root ({roots_str})"
 
 
+def find_existing_show_folder(show_root: Path, show_name: str, first_air_year: int) -> Path | None:
+    """Find an existing show folder matching the given show name and year (case-insensitive).
+
+    Scans the show_root directory for a folder whose lowercased name matches the canonical
+    show folder name (computed as "show_name (year)"). This enables reuse of existing folders
+    regardless of casing differences.
+
+    Args:
+        show_root: The base show root path.
+        show_name: The TV show name.
+        first_air_year: The year the show first aired.
+
+    Returns:
+        The Path to the matching folder if found, or None if no match exists or
+        show_root is not a directory.
+    """
+    if not show_root.is_dir():
+        return None
+
+    canonical = f"{show_name} ({first_air_year})".lower()
+
+    try:
+        for entry in show_root.iterdir():
+            if entry.is_dir() and entry.name.lower() == canonical:
+                return entry
+    except OSError:
+        # If we can't read the directory, just return None
+        return None
+
+    return None
+
+
+def find_existing_season_folder(show_dir: Path, season_number: int) -> Path | None:
+    """Find an existing season folder matching the given season number (ignoring zero-padding).
+
+    Scans the show_dir directory for a folder whose lowercased name starts with "season "
+    and whose numeric suffix matches season_number. This enables reuse of existing folders
+    regardless of zero-padding differences (e.g., "Season 5" vs "Season 05").
+
+    Args:
+        show_dir: The show directory path.
+        season_number: The season number (1-based).
+
+    Returns:
+        The Path to the matching folder if found, or None if no match exists or
+        show_dir is not a directory.
+    """
+    if not show_dir.is_dir():
+        return None
+
+    try:
+        for entry in show_dir.iterdir():
+            if not entry.is_dir():
+                continue
+
+            lowered = entry.name.lower()
+            if not lowered.startswith("season "):
+                continue
+
+            # Try to parse the numeric part after "season "
+            numeric_part = lowered[7:]  # Skip "season " (7 characters)
+            try:
+                parsed_season = int(numeric_part)
+                if parsed_season == season_number:
+                    return entry
+            except ValueError:
+                # Non-numeric suffix, skip this entry
+                continue
+    except OSError:
+        # If we can't read the directory, just return None
+        return None
+
+    return None
+
+
 def build_tv_episode_destination_path(
     show_root: Path,
     show_name: str,

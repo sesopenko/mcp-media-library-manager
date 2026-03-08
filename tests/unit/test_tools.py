@@ -427,3 +427,120 @@ class TestIngestTvEpisode:
                 assert result.success is False
                 assert result.destination_path is None
                 assert result.error is not None
+
+    def test_ingest_uses_existing_show_folder_case_insensitive(self) -> None:
+        """Ingest reuses existing show folder when casing differs."""
+        with TemporaryDirectory() as src_root:
+            with TemporaryDirectory() as show_root:
+                source_roots = (Path(src_root),)
+                show_roots = (Path(show_root),)
+
+                # Pre-create show folder with different casing
+                existing_show_dir = Path(show_root) / "sentenced to be a hero (2024)"
+                existing_show_dir.mkdir(parents=True)
+
+                # Create source file
+                source_file = Path(src_root) / "episode.mkv"
+                source_file.write_text("data")
+
+                result = ingest_tv_episode(
+                    source_file_path=source_file,
+                    show_name="Sentenced to Be A Hero",  # Different casing
+                    first_air_year=2024,
+                    season_number=1,
+                    episode_number=1,
+                    source_roots=source_roots,
+                    show_roots=show_roots,
+                )
+
+                assert result.success is True
+                dest = Path(result.destination_path).resolve()
+                # File should land in the pre-existing folder
+                assert dest.parent.parent == existing_show_dir
+
+    def test_ingest_creates_canonical_show_folder_when_no_match(self) -> None:
+        """Ingest creates canonical show folder when no existing match."""
+        with TemporaryDirectory() as src_root:
+            with TemporaryDirectory() as show_root:
+                source_roots = (Path(src_root),)
+                show_roots = (Path(show_root),)
+
+                source_file = Path(src_root) / "episode.mkv"
+                source_file.write_text("data")
+
+                result = ingest_tv_episode(
+                    source_file_path=source_file,
+                    show_name="My Show",
+                    first_air_year=2020,
+                    season_number=1,
+                    episode_number=1,
+                    source_roots=source_roots,
+                    show_roots=show_roots,
+                )
+
+                assert result.success is True
+                dest = Path(result.destination_path).resolve()
+                # Folder should be created with canonical name
+                assert "My Show (2020)" in str(dest)
+
+    def test_ingest_uses_existing_season_folder_no_zero_pad(self) -> None:
+        """Ingest reuses existing season folder when no zero-padding."""
+        with TemporaryDirectory() as src_root:
+            with TemporaryDirectory() as show_root:
+                source_roots = (Path(src_root),)
+                show_roots = (Path(show_root),)
+
+                # Pre-create season folder without zero-padding
+                show_dir = Path(show_root) / "Show (2020)"
+                show_dir.mkdir(parents=True)
+                season_dir = show_dir / "Season 5"
+                season_dir.mkdir()
+
+                source_file = Path(src_root) / "episode.mkv"
+                source_file.write_text("data")
+
+                result = ingest_tv_episode(
+                    source_file_path=source_file,
+                    show_name="Show",
+                    first_air_year=2020,
+                    season_number=5,
+                    episode_number=1,
+                    source_roots=source_roots,
+                    show_roots=show_roots,
+                )
+
+                assert result.success is True
+                dest = Path(result.destination_path).resolve()
+                # File should land in "Season 5", not a new "Season 05"
+                assert "Season 5" in str(dest) and "Season 05" not in str(dest)
+
+    def test_ingest_uses_existing_season_folder_with_zero_pad(self) -> None:
+        """Ingest reuses existing season folder when zero-padded."""
+        with TemporaryDirectory() as src_root:
+            with TemporaryDirectory() as show_root:
+                source_roots = (Path(src_root),)
+                show_roots = (Path(show_root),)
+
+                # Pre-create season folder with zero-padding
+                show_dir = Path(show_root) / "Show (2020)"
+                show_dir.mkdir(parents=True)
+                season_dir = show_dir / "Season 05"
+                season_dir.mkdir()
+
+                source_file = Path(src_root) / "episode.mkv"
+                source_file.write_text("data")
+
+                result = ingest_tv_episode(
+                    source_file_path=source_file,
+                    show_name="Show",
+                    first_air_year=2020,
+                    season_number=5,
+                    episode_number=1,
+                    source_roots=source_roots,
+                    show_roots=show_roots,
+                )
+
+                assert result.success is True
+                dest = Path(result.destination_path).resolve()
+                # File should land in pre-existing "Season 05"
+                assert str(dest).count("Season 05") == 1  # Only one Season 05 in the path

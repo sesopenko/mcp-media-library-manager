@@ -7,6 +7,8 @@ import pytest
 
 from mcp_media_library_manager.library_paths import (
     build_tv_episode_destination_path,
+    find_existing_season_folder,
+    find_existing_show_folder,
     is_destination_path_inside_root,
     is_source_path_inside_roots,
     is_windows_safe_path_component,
@@ -233,6 +235,154 @@ class TestIsDestinationPathInsideRoot:
 
                 is_inside, _ = is_destination_path_inside_root(dest_path, (root1, root2))
                 assert is_inside is True
+
+
+class TestFindExistingShowFolder:
+    """Tests for finding existing show folders (case-insensitive)."""
+
+    def test_exact_name_match_returns_folder(self) -> None:
+        """Exact show folder name match is found and returned."""
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            show_dir = root / "Breaking Bad (2008)"
+            show_dir.mkdir()
+
+            result = find_existing_show_folder(root, "Breaking Bad", 2008)
+            assert result == show_dir
+
+    def test_case_insensitive_match_returns_folder(self) -> None:
+        """Case-insensitive match is found and returned."""
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            # Create folder with different casing
+            show_dir = root / "sentenced to be a hero (2024)"
+            show_dir.mkdir()
+
+            # Search with different casing
+            result = find_existing_show_folder(root, "Sentenced to Be A Hero", 2024)
+            assert result == show_dir
+
+    def test_no_match_returns_none(self) -> None:
+        """When no folder matches, None is returned."""
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            # Create some folders that don't match
+            (root / "Other Show (2020)").mkdir()
+
+            result = find_existing_show_folder(root, "Breaking Bad", 2008)
+            assert result is None
+
+    def test_nonexistent_show_root_returns_none(self) -> None:
+        """When show_root does not exist, None is returned."""
+        nonexistent = Path("/nonexistent/path")
+        result = find_existing_show_folder(nonexistent, "Show", 2020)
+        assert result is None
+
+    def test_ignores_files_with_matching_names(self) -> None:
+        """Only directories are considered, not files."""
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            # Create a file with matching name (not a directory)
+            file_path = root / "Breaking Bad (2008)"
+            file_path.touch()
+
+            result = find_existing_show_folder(root, "Breaking Bad", 2008)
+            assert result is None
+
+    def test_multiple_folders_returns_first_match(self) -> None:
+        """When multiple folders match (shouldn't happen), the first is returned."""
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            show_dir1 = root / "Breaking Bad (2008)"
+            show_dir1.mkdir()
+            # Create another with different casing
+            show_dir2 = root / "BREAKING BAD (2008)"
+            show_dir2.mkdir()
+
+            result = find_existing_show_folder(root, "Breaking Bad", 2008)
+            assert result in (show_dir1, show_dir2)
+
+
+class TestFindExistingSeasonFolder:
+    """Tests for finding existing season folders (numeric matching, ignoring zero-padding)."""
+
+    def test_exact_match_with_zero_padding_returns_folder(self) -> None:
+        """Exact match "Season 05" is found when searching for season 5."""
+        with TemporaryDirectory() as tmpdir:
+            show_dir = Path(tmpdir)
+            season_dir = show_dir / "Season 05"
+            season_dir.mkdir()
+
+            result = find_existing_season_folder(show_dir, 5)
+            assert result == season_dir
+
+    def test_match_without_zero_padding_returns_folder(self) -> None:
+        """Match "Season 5" is found when searching for season 5."""
+        with TemporaryDirectory() as tmpdir:
+            show_dir = Path(tmpdir)
+            season_dir = show_dir / "Season 5"
+            season_dir.mkdir()
+
+            result = find_existing_season_folder(show_dir, 5)
+            assert result == season_dir
+
+    def test_match_with_double_digit_season_returns_folder(self) -> None:
+        """Double-digit season "Season 12" is found."""
+        with TemporaryDirectory() as tmpdir:
+            show_dir = Path(tmpdir)
+            season_dir = show_dir / "Season 12"
+            season_dir.mkdir()
+
+            result = find_existing_season_folder(show_dir, 12)
+            assert result == season_dir
+
+    def test_no_match_returns_none(self) -> None:
+        """When no season folder matches, None is returned."""
+        with TemporaryDirectory() as tmpdir:
+            show_dir = Path(tmpdir)
+            (show_dir / "Season 3").mkdir()
+            (show_dir / "Season 7").mkdir()
+
+            result = find_existing_season_folder(show_dir, 5)
+            assert result is None
+
+    def test_nonexistent_show_dir_returns_none(self) -> None:
+        """When show_dir does not exist, None is returned."""
+        nonexistent = Path("/nonexistent/show")
+        result = find_existing_season_folder(nonexistent, 5)
+        assert result is None
+
+    def test_case_insensitive_match_returns_folder(self) -> None:
+        """Case-insensitive match "SEASON 5" is found."""
+        with TemporaryDirectory() as tmpdir:
+            show_dir = Path(tmpdir)
+            season_dir = show_dir / "SEASON 5"
+            season_dir.mkdir()
+
+            result = find_existing_season_folder(show_dir, 5)
+            assert result == season_dir
+
+    def test_non_numeric_suffix_is_skipped(self) -> None:
+        """Folders with non-numeric suffixes after 'Season ' are skipped."""
+        with TemporaryDirectory() as tmpdir:
+            show_dir = Path(tmpdir)
+            (show_dir / "Season Specials").mkdir()
+            season_dir = show_dir / "Season 5"
+            season_dir.mkdir()
+
+            result = find_existing_season_folder(show_dir, 5)
+            assert result == season_dir
+
+    def test_ignores_files_with_matching_names(self) -> None:
+        """Only directories are considered, not files."""
+        with TemporaryDirectory() as tmpdir:
+            show_dir = Path(tmpdir)
+            # Create a file named "Season 5" (not a directory)
+            file_path = show_dir / "Season 5"
+            file_path.touch()
+
+            result = find_existing_season_folder(show_dir, 5)
+            assert result is None
 
 
 class TestBuildTvEpisodeDestinationPath:

@@ -6,6 +6,8 @@ from pathlib import Path
 
 from mcp_media_library_manager.library_paths import (
     build_tv_episode_destination_path,
+    find_existing_season_folder,
+    find_existing_show_folder,
     is_destination_path_inside_root,
     is_source_path_inside_roots,
 )
@@ -69,12 +71,10 @@ def ingest_tv_episode(
     if not source.is_file():
         return IngestResult(success=False, error=f"Source path is not a file: {source}")
 
-    # Try to build the destination path (validates all metadata)
+    # Validate all metadata by building the canonical path (discard the return value)
+    show_root = show_roots[0]
     try:
-        # We need to pick a show_root for the destination path
-        # Use the first show_root as the target root
-        show_root = show_roots[0]
-        dest_path_str = build_tv_episode_destination_path(
+        build_tv_episode_destination_path(
             show_root=show_root,
             show_name=show_name,
             first_air_year=first_air_year,
@@ -83,6 +83,23 @@ def ingest_tv_episode(
         )
     except ValueError as e:
         return IngestResult(success=False, error=f"Invalid metadata: {e}")
+
+    # Resolve actual show folder (case-insensitive match)
+    actual_show_dir = find_existing_show_folder(show_root, show_name, first_air_year)
+    if actual_show_dir is None:
+        # No existing match; use canonical name
+        actual_show_dir = show_root / f"{show_name} ({first_air_year})"
+
+    # Resolve actual season folder (numeric match, ignoring zero-padding)
+    actual_season_dir = find_existing_season_folder(actual_show_dir, season_number)
+    if actual_season_dir is None:
+        # No existing match; use canonical name with zero-padding
+        actual_season_dir = actual_show_dir / f"Season {season_number:02d}"
+
+    # Build destination file path
+    episode_filename = f"S{season_number:02d}E{episode_number:02d}.mkv"
+    dest = actual_season_dir / episode_filename
+    dest_path_str = str(dest)
 
     # Validate destination path is inside configured show roots
     is_inside, error = is_destination_path_inside_root(dest_path_str, show_roots)
