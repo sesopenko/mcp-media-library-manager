@@ -3,10 +3,12 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock
+from uuid import UUID
 
 import pytest
 
 from mcp_media_library_manager.config import AppConfig, LoggingConfig, ServerConfig
+from mcp_media_library_manager.ingest_queue import IngestQueue
 from mcp_media_library_manager.logging import Logger
 
 
@@ -35,7 +37,7 @@ class TestIngestTvEpisodeTool:
     """Tests for the ingest_tv_episode MCP tool wrapper."""
 
     def test_tool_returns_success_on_successful_ingest(self) -> None:
-        """Tool returns success=True when ingest succeeds."""
+        """Tool returns success=True when ingest is queued."""
         # Import here to access module-level globals after patching
         from mcp_media_library_manager import server as server_module
 
@@ -49,7 +51,8 @@ class TestIngestTvEpisodeTool:
                 source_file.write_text("fake data")
 
                 # Set up module globals
-                server_module._logger = MagicMock(spec=Logger)
+                mock_logger = MagicMock(spec=Logger)
+                server_module._logger = mock_logger
                 server_module._config = AppConfig(
                     server=ServerConfig(
                         host="localhost",
@@ -59,6 +62,8 @@ class TestIngestTvEpisodeTool:
                     ),
                     logging=LoggingConfig(level="info"),
                 )
+                server_module._ingest_queue = IngestQueue(logger=mock_logger)
+                server_module._ingest_queue.start()
 
                 result = server_module.ingest_tv_episode(
                     source_file_path=str(source_file),
@@ -68,9 +73,14 @@ class TestIngestTvEpisodeTool:
                     episode_number=1,
                 )
 
+                server_module._ingest_queue.shutdown()
+
                 assert result["success"] is True
+                assert result["queued"] is True
+                assert "job_id" in result
                 assert result["destination_path"] is not None
-                assert result["error"] is None
+                # Verify job_id is a valid UUID
+                UUID(result["job_id"])
 
     def test_tool_logs_invocation(self) -> None:
         """Tool logs when invoked."""
@@ -97,6 +107,8 @@ class TestIngestTvEpisodeTool:
                     ),
                     logging=LoggingConfig(level="info"),
                 )
+                server_module._ingest_queue = IngestQueue(logger=mock_logger)
+                server_module._ingest_queue.start()
 
                 server_module.ingest_tv_episode(
                     source_file_path=str(source_file),
@@ -105,6 +117,8 @@ class TestIngestTvEpisodeTool:
                     season_number=1,
                     episode_number=1,
                 )
+
+                server_module._ingest_queue.shutdown()
 
                 # Verify logger.info was called for invocation
                 mock_logger.info.assert_any_call(
@@ -117,7 +131,7 @@ class TestIngestTvEpisodeTool:
                 )
 
     def test_tool_logs_success(self) -> None:
-        """Tool logs success when ingest succeeds."""
+        """Tool logs when ingest is queued."""
         from mcp_media_library_manager import server as server_module
 
         with TemporaryDirectory() as src_root:
@@ -141,6 +155,8 @@ class TestIngestTvEpisodeTool:
                     ),
                     logging=LoggingConfig(level="info"),
                 )
+                server_module._ingest_queue = IngestQueue(logger=mock_logger)
+                server_module._ingest_queue.start()
 
                 result = server_module.ingest_tv_episode(
                     source_file_path=str(source_file),
@@ -150,12 +166,16 @@ class TestIngestTvEpisodeTool:
                     episode_number=1,
                 )
 
-                # Verify logger.info was called for success with destination_path
-                success_calls = [
-                    call for call in mock_logger.info.call_args_list if call[0][0] == "TV episode ingest succeeded"
+                server_module._ingest_queue.shutdown()
+
+                # Verify logger.info was called for queueing with destination_path
+                queued_calls = [
+                    info_call
+                    for info_call in mock_logger.info.call_args_list
+                    if info_call[0][0] == "TV episode ingest queued"
                 ]
-                assert len(success_calls) > 0
-                assert success_calls[0][1]["destination_path"] == result["destination_path"]
+                assert len(queued_calls) > 0
+                assert queued_calls[0][1]["destination_path"] == result["destination_path"]
 
     def test_tool_logs_failure_with_warning(self) -> None:
         """Tool logs failures with warning level."""
@@ -178,6 +198,8 @@ class TestIngestTvEpisodeTool:
                     ),
                     logging=LoggingConfig(level="info"),
                 )
+                server_module._ingest_queue = IngestQueue(logger=mock_logger)
+                server_module._ingest_queue.start()
 
                 # Try to ingest a nonexistent file
                 result = server_module.ingest_tv_episode(
@@ -188,12 +210,16 @@ class TestIngestTvEpisodeTool:
                     episode_number=1,
                 )
 
+                server_module._ingest_queue.shutdown()
+
                 assert result["success"] is False
                 assert result["error"] is not None
 
-                # Verify logger.warning was called for failure
+                # Verify logger.warning was called for validation failure
                 failure_calls = [
-                    call for call in mock_logger.warning.call_args_list if call[0][0] == "TV episode ingest failed"
+                    warn_call
+                    for warn_call in mock_logger.warning.call_args_list
+                    if warn_call[0][0] == "TV episode ingest validation failed"
                 ]
                 assert len(failure_calls) > 0
                 assert failure_calls[0][1]["error"] == result["error"]
@@ -214,7 +240,8 @@ class TestIngestTvEpisodeTool:
                     source_file.write_text("data")
 
                     # Set up module globals
-                    server_module._logger = MagicMock(spec=Logger)
+                    mock_logger = MagicMock(spec=Logger)
+                    server_module._logger = mock_logger
                     server_module._config = AppConfig(
                         server=ServerConfig(
                             host="localhost",
@@ -224,6 +251,8 @@ class TestIngestTvEpisodeTool:
                         ),
                         logging=LoggingConfig(level="info"),
                     )
+                    server_module._ingest_queue = IngestQueue(logger=mock_logger)
+                    server_module._ingest_queue.start()
 
                     result = server_module.ingest_tv_episode(
                         source_file_path=str(source_file),
@@ -232,6 +261,8 @@ class TestIngestTvEpisodeTool:
                         season_number=1,
                         episode_number=1,
                     )
+
+                    server_module._ingest_queue.shutdown()
 
                     assert result["success"] is False
                     assert result["error"] is not None
@@ -257,7 +288,8 @@ class TestIngestTvEpisodeTool:
                 dest_file.write_text("existing data")
 
                 # Set up module globals
-                server_module._logger = MagicMock(spec=Logger)
+                mock_logger = MagicMock(spec=Logger)
+                server_module._logger = mock_logger
                 server_module._config = AppConfig(
                     server=ServerConfig(
                         host="localhost",
@@ -267,6 +299,8 @@ class TestIngestTvEpisodeTool:
                     ),
                     logging=LoggingConfig(level="info"),
                 )
+                server_module._ingest_queue = IngestQueue(logger=mock_logger)
+                server_module._ingest_queue.start()
 
                 result = server_module.ingest_tv_episode(
                     source_file_path=str(source_file),
@@ -275,6 +309,8 @@ class TestIngestTvEpisodeTool:
                     season_number=1,
                     episode_number=1,
                 )
+
+                server_module._ingest_queue.shutdown()
 
                 assert result["success"] is False
                 assert result["error"] is not None
@@ -295,6 +331,62 @@ class TestIngestTvEpisodeTool:
             season_number=1,
             episode_number=1,
         )
+
+        assert result["success"] is False
+        assert result["error"] == "Server not properly initialized"
+
+
+class TestListQueuedIngestionsTool:
+    """Tests for the list_queued_ingestions MCP tool."""
+
+    def test_returns_empty_list_when_queue_empty(self) -> None:
+        """list_queued_ingestions returns empty list when no jobs queued."""
+        from mcp_media_library_manager import server as server_module
+
+        mock_logger = MagicMock(spec=Logger)
+        server_module._ingest_queue = IngestQueue(logger=mock_logger)
+
+        result = server_module.list_queued_ingestions()
+
+        assert "jobs" in result
+        assert result["jobs"] == []
+
+    def test_returns_correct_job_fields(self) -> None:
+        """list_queued_ingestions returns correct fields for queued jobs."""
+        from mcp_media_library_manager import server as server_module
+
+        mock_logger = MagicMock(spec=Logger)
+        queue = IngestQueue(logger=mock_logger)
+        server_module._ingest_queue = queue
+
+        job_id = queue.add_job(
+            show_name="Breaking Bad",
+            first_air_year=2008,
+            season_number=1,
+            episode_number=1,
+            source_path="/tmp/source.mkv",
+            destination_path="/media/Breaking Bad (2008)/Season 01/S01E01.mkv",
+        )
+
+        result = server_module.list_queued_ingestions()
+
+        assert "jobs" in result
+        assert len(result["jobs"]) == 1
+        job = result["jobs"][0]
+        assert job["job_id"] == job_id
+        assert job["show_name"] == "Breaking Bad"
+        assert job["first_air_year"] == 2008
+        assert job["season_number"] == 1
+        assert job["episode_number"] == 1
+        assert job["destination"] == "/media/Breaking Bad (2008)/Season 01/S01E01.mkv"
+
+    def test_returns_error_when_not_initialized(self) -> None:
+        """list_queued_ingestions returns error when queue not initialized."""
+        from mcp_media_library_manager import server as server_module
+
+        server_module._ingest_queue = None
+
+        result = server_module.list_queued_ingestions()
 
         assert result["success"] is False
         assert result["error"] == "Server not properly initialized"

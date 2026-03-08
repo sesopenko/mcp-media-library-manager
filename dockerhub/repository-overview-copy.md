@@ -83,6 +83,38 @@ The tool rejects the operation with an explicit error if:
 - Strict input validation — unsafe or ambiguous inputs are rejected immediately
 - Source and show root enforcement — files can only be read from and written to configured locations
 
+### list_queued_ingestions
+
+Returns the list of currently queued ingest jobs. Files are moved asynchronously by a background worker, so use this tool to check the status of queued ingestions.
+
+**Return Value:**
+
+A dict with a `jobs` array, where each job object contains:
+
+- `job_id` (string): Unique identifier for the job
+- `show_name` (string): The TV show name
+- `first_air_year` (integer): The year the show first aired
+- `season_number` (integer): The season number
+- `episode_number` (integer): The episode number
+- `destination` (string): The computed destination path where the file will be moved
+
+**Example Response:**
+
+```json
+{
+  "jobs": [
+    {
+      "job_id": "550e8400-e29b-41d4-a716-446655440000",
+      "show_name": "Breaking Bad",
+      "first_air_year": 2008,
+      "season_number": 1,
+      "episode_number": 1,
+      "destination": "/media/Breaking Bad (2008)/Season 01/S01E01.mkv"
+    }
+  ]
+}
+```
+
 ---
 
 ## Quick Start

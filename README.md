@@ -177,6 +177,7 @@ Consult your AI application's documentation for how to register an MCP server. E
 |---|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `health_check` | Returns `{"status": "ok"}` to confirm the server is running.                                                                                                             |
 | `ingest_tv_episode` | Ingests a ripped TV episode into the media library using structured metadata, with server-computed standardized destination paths that follow naming conventions and cannot be controlled by the caller. |
+| `list_queued_ingestions` | List all currently queued episode ingest jobs. |
 
 ### Tool Reference
 
