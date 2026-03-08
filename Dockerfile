@@ -7,6 +7,8 @@ WORKDIR /app
 
 # Pre-compile bytecode for faster container startup
 ENV UV_COMPILE_BYTECODE=1
+# Disable uv cache at runtime to avoid permission issues with non-root user
+ENV UV_NO_CACHE=1
 
 # Install production dependencies first (separate layer for cache efficiency)
 COPY pyproject.toml uv.lock ./
