@@ -1,5 +1,6 @@
 """MCP tool implementations for the mcp-media-library-manager server."""
 
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -104,7 +105,7 @@ def ingest_tv_episode(
 
     # Move the file to the destination
     try:
-        source.replace(dest)
+        shutil.move(str(source), str(dest))
     except OSError as e:
         return IngestResult(success=False, error=f"Failed to move file to destination: {e}")
 
